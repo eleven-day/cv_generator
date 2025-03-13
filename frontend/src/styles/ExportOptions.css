@@ -1,0 +1,38 @@
+.export-options {
+    padding: 20px;
+  }
+  
+  .export-form {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  
+  .format-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-top: 10px;
+  }
+  
+  .format-option {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  
+  .format-option:hover {
+    background-color: #e0e0e0;
+  }
+  
+  .format-option input[type="radio"] {
+    margin-right: 5px;
+  }
+  
+  .format-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
