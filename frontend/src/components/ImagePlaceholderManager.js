@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import { imageApi } from '../services/api';
 import '../styles/ImagePlaceholderManager.css';
 
 const ImagePlaceholderManager = ({ placeholderId, description, onUpdateImage }) => {
@@ -23,17 +23,8 @@ const ImagePlaceholderManager = ({ placeholderId, description, onUpdateImage }) 
     setIsUploading(true);
     setError(null);
     
-    const formData = new FormData();
-    formData.append('file', uploadedFile);
-    formData.append('placeholder_id', placeholderId);
-    
     try {
-      const response = await axios.post('/api/image/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-      
+      const response = await imageApi.uploadImage(uploadedFile, placeholderId);
       onUpdateImage(placeholderId, response.data.image_data);
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to upload image');
@@ -50,11 +41,7 @@ const ImagePlaceholderManager = ({ placeholderId, description, onUpdateImage }) 
     setError(null);
     
     try {
-      const response = await axios.post('/api/image/search', {
-        query: searchQuery,
-        placeholder_id: placeholderId
-      });
-      
+      const response = await imageApi.searchImages(searchQuery, placeholderId);
       setSearchResults(response.data);
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to search for images');
@@ -75,11 +62,7 @@ const ImagePlaceholderManager = ({ placeholderId, description, onUpdateImage }) 
     setError(null);
     
     try {
-      const response = await axios.post('/api/image/generate', {
-        prompt: generatePrompt,
-        placeholder_id: placeholderId
-      });
-      
+      const response = await imageApi.generateImage(generatePrompt, placeholderId);
       onUpdateImage(placeholderId, response.data.image_data);
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to generate image');

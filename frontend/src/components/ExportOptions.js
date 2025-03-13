@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import { exportApi } from '../services/api';
 import '../styles/ExportOptions.css';
 
 const ExportOptions = ({ markdownContent }) => {
@@ -13,16 +13,10 @@ const ExportOptions = ({ markdownContent }) => {
     setError(null);
     
     try {
-      const response = await axios.post(
-        '/api/export/convert',
-        {
-          markdown_content: markdownContent,
-          format: exportFormat,
-          filename: filename
-        },
-        {
-          responseType: 'blob'
-        }
+      const response = await exportApi.exportResume(
+        markdownContent,
+        exportFormat,
+        filename
       );
       
       // Create a download link for the file

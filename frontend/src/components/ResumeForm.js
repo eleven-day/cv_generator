@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import { resumeApi } from '../services/api';
 import '../styles/ResumeForm.css';
 
 const ResumeForm = ({ onGenerateResume }) => {
@@ -43,7 +43,7 @@ const ResumeForm = ({ onGenerateResume }) => {
       if (formData.contact) apiData.additional_info.contact = formData.contact;
       if (formData.additionalInfo) apiData.additional_info.additional = formData.additionalInfo;
 
-      const response = await axios.post('/api/resume/generate', apiData);
+      const response = await resumeApi.generateResume(apiData);
       onGenerateResume(response.data);
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to generate resume');
