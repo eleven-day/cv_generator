@@ -89,3 +89,21 @@ def resize_image(image_data: bytes, max_width: int = 800, max_height: int = 800)
     buffered = BytesIO()
     img.save(buffered, format="PNG")
     return buffered.getvalue()
+
+if __name__ == "__main__":
+    # Test the image helpers
+    placeholder_image = create_placeholder_image(
+        width=400, 
+        height=200, 
+        text="Hello, World!", 
+        bg_color=(100, 150, 200)
+    )
+    print(placeholder_image)
+    
+    # Load an example image
+    with open("example.jpg", "rb") as f:
+        image_data = f.read()
+    
+    # Resize the image
+    resized_image = resize_image(image_data, max_width=800, max_height=600)
+    print(f"Original size: {len(image_data)} bytes, Resized size: {len(resized_image)} bytes")

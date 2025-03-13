@@ -39,3 +39,33 @@ async def update_resume(
     except Exception as e:
         app_logger.error(f"Error updating resume: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error updating resume: {str(e)}")
+    
+# 当运行此脚本是，测试一下这个接口的功能函数generate_resume，update_resume
+if __name__ == "__main__":
+    import asyncio
+    from app.models.resume import ResumeInput
+
+    # Test generate_resume
+    async def test_generate_resume():
+        # Create a test ResumeInput object
+        test_request = ResumeInput(
+            name="Xiao Han",
+            position="Algorithm Engineer",
+            additional_info={}
+        )
+
+        # Run the test
+        result = await generate_resume(test_request)
+        print(result)
+
+    # Test update_resume
+    async def test_update_resume():
+        # Create a test markdown content
+        test_markdown = "**Test**"
+
+        # Run the test
+        result = await update_resume(test_markdown)
+        print(result)
+
+    asyncio.run(test_generate_resume())
+    asyncio.run(test_update_resume())

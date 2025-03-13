@@ -32,3 +32,19 @@ async def convert_resume(input_data: ExportRequest = Body(...)):
     except Exception as e:
         app_logger.error(f"Error exporting resume: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error exporting resume: {str(e)}")
+    
+# 当运行此脚本是，测试一下这个接口的功能函数convert_resume
+if __name__ == "__main__":
+    from app.models.export import ExportFormat
+    from app.models.export import ExportRequest
+    import asyncio
+
+    # Create a test ExportRequest object
+    test_request = ExportRequest(
+        markdown_content="**Test**",
+        format=ExportFormat.PDF,
+        filename="test"
+    )
+
+    # Run the test
+    asyncio.run(convert_resume(test_request))

@@ -205,3 +205,35 @@ async def generate_image(prompt: str, placeholder_id: str) -> Dict[str, Any]:
             "image_data": img_data,
             "placeholder_id": placeholder_id
         }
+    
+# Test the image service functions
+if __name__ == "__main__":
+    # Test process_uploaded_image
+    async def test_process_uploaded_image():
+        # Create a test UploadFile object
+        test_file = UploadFile(
+            filename="test.jpg",
+            content_type="image/jpeg"
+        )
+        test_file.file = open("test.jpg", "rb")
+        
+        # Run the test
+        result = await process_uploaded_image(test_file, "test")
+        print(result)
+    
+    # Test search_image
+    async def test_search_image():
+        # Run the test
+        result = await search_image("cat", "cat")
+        print(result)
+    
+    # Test generate_image
+    async def test_generate_image():
+        # Run the test
+        result = await generate_image("A beautiful sunset over the ocean", "sunset")
+        print(result)
+    
+    # Run the tests
+    asyncio.run(test_process_uploaded_image())
+    asyncio.run(test_search_image())
+    asyncio.run(test_generate_image())

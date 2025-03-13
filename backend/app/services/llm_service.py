@@ -139,3 +139,42 @@ async def generate_resume_content(
     except Exception as e:
         app_logger.error(f"Error generating resume content: {str(e)}")
         raise
+
+# Test the resume service functions
+if __name__ == "__main__":
+    import asyncio
+    from app.models.resume import ResumeInput
+
+    # Test generate_resume
+    async def test_generate_resume():
+        # Create a test ResumeInput object
+        test_request = ResumeInput(
+            name="Xiao Han",
+            position="Algorithm Engineer",
+            additional_info={}
+        )
+
+        # Run the test
+        result = await generate_resume_content(
+            name=test_request.name,
+            position=test_request.position,
+            additional_info=test_request.additional_info
+        )
+        print(result)
+
+    # Test update_resume
+    async def test_update_resume():
+        # Create a test markdown content
+        test_markdown = "**Test**"
+
+        # Run the test
+        result = await generate_resume_content(
+            name="Xiao Han",
+            position="Algorithm Engineer",
+            additional_info={},
+            existing_content=test_markdown
+        )
+        print(result)
+
+    asyncio.run(test_generate_resume())
+    asyncio.run(test_update_resume())

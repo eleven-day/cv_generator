@@ -181,3 +181,19 @@ async def export_resume(markdown_content: str, output_format: str, output_path: 
         error_msg = f"Unsupported output format: {output_format}"
         app_logger.error(error_msg)
         raise ValueError(error_msg)
+    
+# 当运行此脚本是，测试一下这个接口的功能函数convert_resume
+if __name__ == "__main__":
+    from app.models.export import ExportFormat
+    from app.models.export import ExportRequest
+    import asyncio
+
+    # Create a test ExportRequest object
+    test_request = ExportRequest(
+        markdown_content="**Test**",
+        format=ExportFormat.PDF,
+        filename="test"
+    )
+
+    # Run the test
+    asyncio.run(export_resume(test_request.markdown_content, test_request.format.value, f"test.{test_request.format.value}"))

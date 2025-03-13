@@ -51,3 +51,29 @@ def replace_placeholders_with_images(
             updated_content = updated_content.replace(placeholder, replacement)
     
     return updated_content
+
+if __name__ == "__main__":
+    markdown_text = """
+    # My Resume
+    
+    This is my resume with an image placeholder:
+    
+    ![Profile Picture](image:profile_pic)
+    
+    ## Experience
+    
+    Here is a logo placeholder:
+    
+    ![Company Logo](image:company_logo)
+    """
+    
+    image_data = {
+        "profile_pic": "https://example.com/profile_pic.jpg",
+        "company_logo": "https://example.com/company_logo.png"
+    }
+    
+    placeholders = extract_image_placeholders(markdown_text)
+    print(f"Extracted placeholders: {placeholders}")
+    
+    updated_markdown = replace_placeholders_with_images(markdown_text, image_data)
+    print(f"Updated markdown content:\n{updated_markdown}")

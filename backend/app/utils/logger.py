@@ -32,3 +32,8 @@ def setup_logger(name: str, level: Optional[int] = None) -> logging.Logger:
 
 # Create a default logger for the application
 app_logger = setup_logger("resume_generator")
+
+if __name__ == "__main__":
+    app_logger.info("This is a test log message")
+    app_logger.error("This is an error log message")
+    app_logger.warning("This is a warning log message")     
