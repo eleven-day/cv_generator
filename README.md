@@ -15,16 +15,17 @@ An AI-powered application for generating professional resumes using the Gemini A
 
 ### Prerequisites
 
-- Python 3.8+
-- Node.js 16+
+- Python 3.10+
+- Node.js 18+
 - Google Gemini API key
+- UNSPLASH_API_KEY
 
 ### Installation
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/resume-generator.git
-cd resume-generator
+git clone https://github.com/eleven-day/cv_generator.git
+cd cv_generator
 ```
 
 2. Set up the backend:
@@ -41,7 +42,8 @@ npm install
 
 4. Set your Gemini API key:
 ```bash
-export GEMINI_API_KEY="your-api-key-here"
+export GEMINI_API_KEY="your-gemini-api-key-here"
+export UNSPLASH_API_KEY="your-unsplash-api-key-here"
 ```
 
 ### Running the application
