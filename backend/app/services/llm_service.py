@@ -8,7 +8,6 @@ from app.utils.markdown_helpers import extract_image_placeholders
 
 # Initialize Google Gemini API client
 API_KEY = os.getenv("GEMINI_API_KEY", "your_api_key_here")  # Replace with your API key in production
-genai.configure(api_key=API_KEY)
 
 PROMPT_TEMPLATE = """
 <Background>
@@ -48,7 +47,7 @@ use the placeholder syntax: ![description](image:placeholder_id) where placehold
 </Output Format>
 """
 
-async def generate_resume_content(
+def generate_resume_content(
     name: str,
     position: str,
     additional_info: Dict[str, Any] = None,
@@ -115,8 +114,8 @@ async def generate_resume_content(
     
     try:
         # Generate content using Gemini
-        client = genai.Client()
-        response = await client.models.generate_content_async(
+        client = genai.Client(api_key=API_KEY)
+        response = client.models.generate_content(
             model="gemini-2.0-flash",
             contents=prompt,
             config=types.GenerateContentConfig(
@@ -155,7 +154,7 @@ if __name__ == "__main__":
         )
 
         # Run the test
-        result = await generate_resume_content(
+        result = generate_resume_content(
             name=test_request.name,
             position=test_request.position,
             additional_info=test_request.additional_info
@@ -168,7 +167,7 @@ if __name__ == "__main__":
         test_markdown = "**Test**"
 
         # Run the test
-        result = await generate_resume_content(
+        result = generate_resume_content(
             name="Xiao Han",
             position="Algorithm Engineer",
             additional_info={},

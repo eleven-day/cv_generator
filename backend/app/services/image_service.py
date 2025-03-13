@@ -15,9 +15,8 @@ from app.utils.image_helpers import create_placeholder_image, resize_image
 
 # Initialize Google Gemini API client
 API_KEY = os.getenv("GEMINI_API_KEY", "your_api_key_here")  # Replace with your API key in production
-genai.configure(api_key=API_KEY)
 
-async def process_uploaded_image(file: UploadFile, placeholder_id: str) -> Dict[str, Any]:
+def process_uploaded_image(file: UploadFile, placeholder_id: str) -> Dict[str, Any]:
     """
     Process an uploaded image file
     
@@ -29,7 +28,7 @@ async def process_uploaded_image(file: UploadFile, placeholder_id: str) -> Dict[
         Dictionary with base64 encoded image and placeholder ID
     """
     # Read and process the image
-    content = await file.read()
+    content = file.read()
     
     # Resize if necessary
     content = resize_image(content, max_width=500, max_height=500)
@@ -159,7 +158,7 @@ async def search_image(
         "placeholder_id": placeholder_id
     }
 
-async def generate_image(prompt: str, placeholder_id: str) -> Dict[str, Any]:
+def generate_image(prompt: str, placeholder_id: str) -> Dict[str, Any]:
     """
     Generate an image from a text prompt using Gemini API
     
@@ -173,8 +172,8 @@ async def generate_image(prompt: str, placeholder_id: str) -> Dict[str, Any]:
     app_logger.info(f"Generating image with prompt '{prompt}' for placeholder {placeholder_id}")
     
     try:
-        client = genai.Client()
-        response = await client.models.generate_images_async(
+        client = genai.Client(api_key=API_KEY)
+        response = client.models.generate_images(
             model="imagen-3.0-generate-002",
             prompt=prompt,
             config=types.GenerateImagesConfig(
@@ -209,7 +208,7 @@ async def generate_image(prompt: str, placeholder_id: str) -> Dict[str, Any]:
 # Test the image service functions
 if __name__ == "__main__":
     # Test process_uploaded_image
-    async def test_process_uploaded_image():
+    def test_process_uploaded_image():
         # Create a test UploadFile object
         test_file = UploadFile(
             filename="test.jpg",
@@ -218,7 +217,7 @@ if __name__ == "__main__":
         test_file.file = open("test.jpg", "rb")
         
         # Run the test
-        result = await process_uploaded_image(test_file, "test")
+        result = process_uploaded_image(test_file, "test")
         print(result)
     
     # Test search_image
@@ -228,12 +227,12 @@ if __name__ == "__main__":
         print(result)
     
     # Test generate_image
-    async def test_generate_image():
+    def test_generate_image():
         # Run the test
-        result = await generate_image("A beautiful sunset over the ocean", "sunset")
+        result = generate_image("A beautiful sunset over the ocean", "sunset")
         print(result)
     
     # Run the tests
-    asyncio.run(test_process_uploaded_image())
+    test_process_uploaded_image()
     asyncio.run(test_search_image())
-    asyncio.run(test_generate_image())
+    test_generate_image()

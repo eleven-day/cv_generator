@@ -16,7 +16,7 @@ async def convert_resume(input_data: ExportRequest = Body(...)):
             temp_filename = temp_file.name
         
         # Export the resume to the specified format
-        await export_resume(
+        export_resume(
             markdown_content=input_data.markdown_content,
             output_format=input_data.format.value,
             output_path=temp_filename

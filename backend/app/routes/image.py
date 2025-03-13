@@ -11,12 +11,12 @@ from app.utils.logger import app_logger
 router = APIRouter()
 
 @router.post("/upload", response_model=ImageResponse)
-async def upload_image(
+def upload_image(
     file: UploadFile = File(...),
     placeholder_id: str = Form(...)
 ):
     try:
-        result = await process_uploaded_image(file, placeholder_id)
+        result = process_uploaded_image(file, placeholder_id)
         return result
     except Exception as e:
         app_logger.error(f"Error processing image: {str(e)}")
@@ -34,7 +34,7 @@ async def search_for_image(input_data: ImageSearchInput):
 @router.post("/generate", response_model=ImageResponse)
 async def generate_image_from_prompt(input_data: ImageGenerationInput):
     try:
-        result = await generate_image(input_data.prompt, input_data.placeholder_id)
+        result = generate_image(input_data.prompt, input_data.placeholder_id)
         return result
     except Exception as e:
         app_logger.error(f"Error generating image: {str(e)}")
@@ -59,7 +59,7 @@ if __name__ == "__main__":
         test_file.file = open("test.jpg", "rb")
 
         # Run the test
-        await upload_image(file=test_file, placeholder_id="test")
+        upload_image(file=test_file, placeholder_id="test")
 
     # Test search_for_image
     async def test_search_for_image():
@@ -73,7 +73,7 @@ if __name__ == "__main__":
         await search_for_image(test_input)
 
     # Test generate_image_from_prompt
-    async def test_generate_image_from_prompt():
+    def test_generate_image_from_prompt():
         # Create a test ImageGenerationInput object
         test_input = ImageGenerationInput(
             prompt="A cat sitting on a table",
@@ -81,9 +81,9 @@ if __name__ == "__main__":
         )
 
         # Run the test
-        await generate_image_from_prompt(test_input)
+        generate_image_from_prompt(test_input)
 
     # Run the tests
     asyncio.run(test_upload_image())
     asyncio.run(test_search_for_image())
-    asyncio.run(test_generate_image_from_prompt())
+    test_generate_image_from_prompt()

@@ -1,17 +1,13 @@
 import os
 import markdown
 import tempfile
-from typing import Dict, Any
-import asyncio
-import subprocess
-from pathlib import Path
 from weasyprint import HTML, CSS
 from app.utils.logger import app_logger
 
 # Add support for other formats
 import pypandoc
 
-async def export_resume(markdown_content: str, output_format: str, output_path: str) -> str:
+def export_resume(markdown_content: str, output_format: str, output_path: str) -> str:
     """
     Export resume markdown to various formats
     
@@ -186,7 +182,6 @@ async def export_resume(markdown_content: str, output_format: str, output_path: 
 if __name__ == "__main__":
     from app.models.export import ExportFormat
     from app.models.export import ExportRequest
-    import asyncio
 
     # Create a test ExportRequest object
     test_request = ExportRequest(
@@ -196,4 +191,4 @@ if __name__ == "__main__":
     )
 
     # Run the test
-    asyncio.run(export_resume(test_request.markdown_content, test_request.format.value, f"test.{test_request.format.value}"))
+    export_resume(test_request.markdown_content, test_request.format.value, f"test.{test_request.format.value}")

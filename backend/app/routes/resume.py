@@ -7,10 +7,10 @@ from app.utils.logger import app_logger
 router = APIRouter()
 
 @router.post("/generate", response_model=ResumeOutput)
-async def generate_resume(input_data: ResumeInput = Body(...)):
+def generate_resume(input_data: ResumeInput = Body(...)):
     try:
         # Generate resume using LLM
-        result = await generate_resume_content(
+        result = generate_resume_content(
             name=input_data.name,
             position=input_data.position,
             additional_info=input_data.additional_info or {}
@@ -21,7 +21,7 @@ async def generate_resume(input_data: ResumeInput = Body(...)):
         raise HTTPException(status_code=500, detail=f"Error generating resume: {str(e)}")
 
 @router.post("/update", response_model=ResumeOutput)
-async def update_resume(
+def update_resume(
     markdown_content: str = Body(...),
     name: str = Body("Xiao Han"),
     position: str = Body("Algorithm Engineer"),
@@ -29,7 +29,7 @@ async def update_resume(
 ):
     try:
         # Update existing resume content
-        result = await generate_resume_content(
+        result = generate_resume_content(
             name=name,
             position=position,
             additional_info=additional_info or {},
@@ -42,11 +42,10 @@ async def update_resume(
     
 # 当运行此脚本是，测试一下这个接口的功能函数generate_resume，update_resume
 if __name__ == "__main__":
-    import asyncio
     from app.models.resume import ResumeInput
 
     # Test generate_resume
-    async def test_generate_resume():
+    def test_generate_resume():
         # Create a test ResumeInput object
         test_request = ResumeInput(
             name="Xiao Han",
@@ -55,17 +54,17 @@ if __name__ == "__main__":
         )
 
         # Run the test
-        result = await generate_resume(test_request)
+        result = generate_resume(test_request)
         print(result)
 
     # Test update_resume
-    async def test_update_resume():
+    def test_update_resume():
         # Create a test markdown content
         test_markdown = "**Test**"
 
         # Run the test
-        result = await update_resume(test_markdown)
+        result = update_resume(test_markdown)
         print(result)
 
-    asyncio.run(test_generate_resume())
-    asyncio.run(test_update_resume())
+    test_generate_resume()
+    test_update_resume()

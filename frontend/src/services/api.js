@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create axios instance with base URL
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || '/api',
+  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8000/api',
   timeout: 60000, // 60 seconds timeout for long operations like image generation
 });
 
@@ -40,8 +40,11 @@ export const exportApi = {
     ),
 };
 
-export default {
+// 将对象赋值给变量，再导出，解决 import/no-anonymous-default-export 警告
+const apiService = {
   resume: resumeApi,
   image: imageApi,
   export: exportApi,
 };
+
+export default apiService;
