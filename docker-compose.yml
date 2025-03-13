@@ -7,6 +7,7 @@ services:
       - "8000:8000"
     environment:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - UNSPLASH_API_KEY=${UNSPLASH_API_KEY}
     volumes:
       - ./backend/app:/app/app
     restart: unless-stopped
