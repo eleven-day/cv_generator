@@ -7,7 +7,7 @@ from app.utils.templates import DEFAULT_RESUME_HTML, GENERATE_PROMPT_TEMPLATE
 from app.utils.logger import app_logger
 
 # 初始化 Google Gemini API 客户端
-API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyD65DzyhRLN4YmGS6PRbJrx10j_PC8nBb0")  # 在生产环境中替换为您的 API 密钥
+API_KEY = os.getenv("GEMINI_API_KEY", "")  # 在生产环境中替换为您的 API 密钥
 
 def generate_resume_content(
     name: str,
