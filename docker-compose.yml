@@ -1,21 +1,46 @@
 version: '3.8'
 
 services:
+  # Frontend service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: llm-resume-generator-frontend
+    ports:
+      - "3000:80" # Map to nginx port inside container
+    volumes:
+      - frontend_build:/app/build
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+  # Backend service
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: llm-resume-generator-backend
     ports:
       - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - frontend_build:/app/app/static:ro
     environment:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - UNSPLASH_API_KEY=${UNSPLASH_API_KEY}
-    volumes:
-      - ./backend/app:/app/app
+      - HOST=0.0.0.0
+      - PORT=8000
+      - PYTHONUNBUFFERED=1
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 
-  frontend:
-    build: ./frontend
-    ports:
-      - "3000:80"
-    depends_on:
-      - backend
-    restart: unless-stopped
+volumes:
+  frontend_build:

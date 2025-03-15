@@ -4,24 +4,26 @@ FROM node:18-alpine as build
 WORKDIR /app
 
 # Copy package files and install dependencies
-COPY package.json package-lock.json ./
-RUN npm ci
+COPY package*.json ./
+RUN npm install
 
-# Copy source code and build the app
+# Copy source code
 COPY . .
+
+# Build the app
 RUN npm run build
 
-# Production stage
+# Production stage with Nginx
 FROM nginx:alpine
 
-# Copy built assets from build stage
+# Copy build files from the build stage
 COPY --from=build /app/build /usr/share/nginx/html
 
-# Add custom nginx config to handle client-side routing
+# Copy custom nginx config if needed
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Expose port
 EXPOSE 80
 
-# Start nginx
+# Start Nginx
 CMD ["nginx", "-g", "daemon off;"]

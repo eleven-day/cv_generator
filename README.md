@@ -8,7 +8,7 @@ An AI-powered application for generating professional resumes using the Gemini A
 - Customize content with a markdown editor
 - Handle image placeholders with upload, search, or AI generation
 - Real-time preview with professional styling
-- Export to multiple formats (PDF, DOCX, PPTX, Markdown, HTML)
+- Export to multiple formats (PDF)
 - Available as a standalone application
 
 ## Getting Started

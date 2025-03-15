@@ -1,465 +1,347 @@
+"""
+package.py - Enhanced script to package LLM Resume Generator as an executable
+"""
+
 import os
-import sys
-import subprocess
 import shutil
-import argparse
-import logging
-import json
-from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor
-import time
+import subprocess
+import sys
+import platform
+import pkg_resources
 
-# 配置日志
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
-logger = logging.getLogger("builder")
+def create_directories():
+    """Create necessary directories for the build process"""
+    print("Creating build directories...")
+    if os.path.exists("dist"):
+        shutil.rmtree("dist")
+    if os.path.exists("build"):
+        shutil.rmtree("build")
+    os.makedirs("dist", exist_ok=True)
+    os.makedirs("build", exist_ok=True)
 
-class BuildError(Exception):
-    """自定义构建错误异常"""
-    pass
+def build_frontend():
+    """Build the React frontend"""
+    print("Building frontend...")
+    os.chdir("frontend")
+    subprocess.run("npm run build", shell=True, check=True)
+    os.chdir("..")
+    
+    # Copy the build to a location the backend can serve
+    frontend_build = os.path.join("frontend", "build")
+    backend_static = os.path.join("backend", "app", "static")
+    
+    if os.path.exists(backend_static):
+        shutil.rmtree(backend_static)
+    
+    shutil.copytree(frontend_build, backend_static)
+    print("Frontend build complete and copied to backend")
 
-def run_command(cmd, check=True, cwd=None, env=None, shell=False):
-    """
-    执行命令并处理错误
+def install_missing_dependencies():
+    """Install any missing dependencies required for packaging"""
+    print("Checking for missing dependencies...")
     
-    Args:
-        cmd: 要执行的命令（列表或字符串）
-        check: 是否在命令失败时抛出异常
-        cwd: 执行命令的工作目录
-        env: 环境变量
-        shell: 是否使用shell执行命令
-        
-    Returns:
-        subprocess.CompletedProcess: 命令执行结果
-    """
-    try:
-        logger.debug(f"执行命令: {cmd}")
-        result = subprocess.run(
-            cmd, 
-            check=check, 
-            cwd=cwd, 
-            env=env, 
-            shell=shell,
-            text=True,
-            capture_output=True
-        )
-        return result
-    except subprocess.CalledProcessError as e:
-        logger.error(f"命令执行失败: {e}")
-        logger.error(f"错误输出: {e.stderr}")
-        if check:
-            raise BuildError(f"命令执行失败: {e}")
-        return e
-
-def check_dependencies():
-    """检查并安装必要的依赖"""
-    logger.info("检查系统依赖...")
-    
-    # 检查Node.js和npm
-    try:
-        node_version = run_command(["node", "--version"])
-        npm_version = run_command(["npm", "--version"])
-        logger.info(f"Node.js版本: {node_version.stdout.strip()}")
-        logger.info(f"npm版本: {npm_version.stdout.strip()}")
-    except (BuildError, FileNotFoundError):
-        logger.error("Node.js或npm未安装，请先安装Node.js: https://nodejs.org/")
-        raise BuildError("缺少Node.js依赖")
-    
-    # 安装Python依赖
-    logger.info("安装Python依赖...")
-    requirements_path = Path("backend/requirements.txt")
-    if not requirements_path.exists():
-        logger.error(f"找不到requirements.txt: {requirements_path}")
-        raise BuildError("找不到requirements.txt文件")
-    
-    run_command([sys.executable, "-m", "pip", "install", "-r", str(requirements_path)])
-    
-    # 安装PyInstaller
-    try:
-        import pyinstaller
-        logger.info(f"PyInstaller版本: {pyinstaller.__version__}")
-    except ImportError:
-        logger.info("安装PyInstaller...")
-        run_command([sys.executable, "-m", "pip", "install", "pyinstaller>=6.0.0"])
-
-def build_frontend(frontend_dir="frontend", production=True):
-    """
-    构建React前端
-    
-    Args:
-        frontend_dir: 前端代码目录
-        production: 是否为生产环境构建
-    
-    Returns:
-        Path: 构建输出目录路径
-    """
-    frontend_path = Path(frontend_dir)
-    if not frontend_path.exists():
-        raise BuildError(f"前端目录不存在: {frontend_path}")
-    
-    logger.info("构建前端应用...")
-    
-    # 检查package.json
-    package_json = frontend_path / "package.json"
-    if not package_json.exists():
-        raise BuildError(f"找不到package.json: {package_json}")
-    
-    # 安装依赖
-    node_modules = frontend_path / "node_modules"
-    if not node_modules.exists():
-        logger.info("安装前端依赖...")
-        run_command(["npm", "install"], cwd=frontend_path)
-    
-    # 运行构建命令
-    build_cmd = "build" if production else "build:dev"
-    logger.info(f"执行npm {build_cmd}...")
-    run_command(["npm", "run", build_cmd], cwd=frontend_path)
-    
-    build_output = frontend_path / "build"
-    if not build_output.exists():
-        raise BuildError(f"前端构建失败，输出目录不存在: {build_output}")
-    
-    return build_output
-
-def prepare_backend(backend_dir="backend", frontend_build_dir=None):
-    """
-    准备后端应用
-    
-    Args:
-        backend_dir: 后端代码目录
-        frontend_build_dir: 前端构建输出目录
-    """
-    backend_path = Path(backend_dir)
-    if not backend_path.exists():
-        raise BuildError(f"后端目录不存在: {backend_path}")
-    
-    logger.info("准备后端应用...")
-    
-    # 复制前端构建到后端静态目录
-    if frontend_build_dir:
-        static_dir = backend_path / "app" / "static"
-        if static_dir.exists():
-            logger.info(f"清理现有静态资源目录: {static_dir}")
-            shutil.rmtree(static_dir)
-        
-        logger.info(f"复制前端构建到后端静态目录: {static_dir}")
-        static_dir.mkdir(parents=True, exist_ok=True)
-        shutil.copytree(frontend_build_dir, static_dir, dirs_exist_ok=True)
-
-def create_entry_script(build_dir, custom_port=8000):
-    """
-    创建应用入口脚本
-    
-    Args:
-        build_dir: 构建目录
-        custom_port: 应用使用的端口
-    
-    Returns:
-        Path: 入口脚本路径
-    """
-    build_path = Path(build_dir)
-    build_path.mkdir(exist_ok=True, parents=True)
-    
-    entry_script = build_path / "resume_generator.py"
-    logger.info(f"创建应用入口脚本: {entry_script}")
-    
-    entry_script_content = f"""
-    import os
-    import sys
-    import uvicorn
-    import webbrowser
-    import logging
-    from threading import Timer
-    from pathlib import Path
-
-    # 配置日志
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
-    )
-    logger = logging.getLogger("resume-generator")
-
-    def open_browser():
-        \"\"\"打开浏览器访问应用\"\"\"
-        url = f"http://localhost:{custom_port}"
-        logger.info(f"正在浏览器中打开应用: {{url}}")
-        webbrowser.open(url)
-
-    # 应用配置
-    PORT = {custom_port}
-    HOST = "127.0.0.1"  # 只允许本地访问更安全
-
-    if __name__ == "__main__":
-        logger.info("正在启动简历生成器应用...")
-        
-        # 获取应用路径
-        if getattr(sys, 'frozen', False):
-            # 如果是打包后的可执行文件
-            application_path = Path(sys.executable).parent
-        else:
-            # 如果是开发环境
-            application_path = Path(__file__).parent
-        
-        # 设置工作目录
-        os.chdir(application_path)
-        
-        # 添加后端模块到Python路径
-        backend_path = application_path
-        if not getattr(sys, 'frozen', False):
-            backend_path = Path(__file__).parent.parent
-        sys.path.insert(0, str(backend_path))
-        
-        # 在短暂延迟后打开浏览器
-        Timer(2, open_browser).start()
-        
-        try:
-            # 导入并运行FastAPI应用
-            logger.info(f"启动API服务于: {{HOST}}:{{PORT}}")
-            from backend.app.main import app
-            uvicorn.run(app, host=HOST, port=PORT)
-        except Exception as e:
-            logger.error(f"应用启动失败: {{e}}")
-            input("按回车键退出...")
-    """
-
-    with open(entry_script, "w") as f:
-        f.write(entry_script_content)
-    
-    return entry_script
-
-def build_executable(entry_script, output_dir, app_name, icon_path=None, clean_build=True):
-    """
-    使用PyInstaller构建可执行文件
-    
-    Args:
-        entry_script: 入口脚本路径
-        output_dir: 输出目录
-        app_name: 应用名称
-        icon_path: 图标路径
-        clean_build: 是否清理构建文件
-    
-    Returns:
-        Path: 可执行文件路径
-    """
-    logger.info("使用PyInstaller构建可执行文件...")
-    
-    # 确定构建目录
-    build_dir = Path("build")
-    dist_dir = Path(output_dir) / "dist"
-    
-    # 准备PyInstaller命令
-    pyinstaller_cmd = [
-        "pyinstaller",
-        "--name", app_name,
-        "--onefile",
-        "--windowed" if sys.platform in ["win32", "darwin"] else "--console",
-        "--add-data", f"../backend/app/static{os.pathsep}app/static",
-        "--clean" if clean_build else "",
-        "--noconfirm",
-        "--distpath", str(dist_dir),
+    # Key dependencies that might be needed
+    dependencies = [
+        "tzdata",  # For timezone information
+        "fontconfig",  # For weasyprint
+        "pango",  # For weasyprint
     ]
     
-    # 添加图标
-    if icon_path and Path(icon_path).exists():
-        logger.info(f"使用图标: {icon_path}")
-        pyinstaller_cmd.extend(["--icon", icon_path])
-    else:
-        logger.warning(f"图标不存在或未指定: {icon_path}")
-    
-    # 移除空字符串
-    pyinstaller_cmd = [cmd for cmd in pyinstaller_cmd if cmd]
-    
-    # 添加入口脚本
-    pyinstaller_cmd.append(str(entry_script.name))
-    
-    # 确保输出目录存在
-    dist_dir.parent.mkdir(exist_ok=True, parents=True)
-    
-    # 运行PyInstaller
-    run_command(pyinstaller_cmd, cwd=build_dir)
-    
-    # 确定可执行文件名称和路径
-    if sys.platform == "win32":
-        exe_name = f"{app_name}.exe"
-    elif sys.platform == "darwin":
-        exe_name = app_name + ".app"
-    else:  # Linux
-        exe_name = app_name
-    
-    executable_path = dist_dir / exe_name
-    
-    if not executable_path.exists():
-        raise BuildError(f"构建失败，可执行文件不存在: {executable_path}")
-    
-    return executable_path
+    for dep in dependencies:
+        try:
+            pkg_resources.get_distribution(dep)
+            print(f"✓ {dep} is already installed")
+        except pkg_resources.DistributionNotFound:
+            print(f"Installing {dep}...")
+            subprocess.run(f"pip install {dep}", shell=True)
 
-def copy_to_output(executable_path, output_dir):
-    """
-    复制可执行文件到输出目录
+def build_executable():
+    """Package the application with PyInstaller"""
+    print("Packaging application with PyInstaller...")
+    os.chdir("backend")
     
-    Args:
-        executable_path: 可执行文件路径
-        output_dir: 输出目录
-    
-    Returns:
-        Path: 最终可执行文件路径
-    """
-    output_path = Path(output_dir)
-    output_path.mkdir(exist_ok=True, parents=True)
-    
-    dest_path = output_path / executable_path.name
-    
-    logger.info(f"复制可执行文件到输出目录: {dest_path}")
-    if dest_path.exists():
-        dest_path.unlink()
-    
-    shutil.copy2(executable_path, dest_path)
-    
-    return dest_path
+    # Create a more robust spec file
+    spec_content = f"""# -*- mode: python ; coding: utf-8 -*-
 
-def clean_temp_files(build_dir="build", keep_dist=False):
-    """
-    清理临时构建文件
-    
-    Args:
-        build_dir: 构建目录
-        keep_dist: 是否保留dist目录
-    """
-    build_path = Path(build_dir)
-    
-    if not build_path.exists():
-        return
-    
-    logger.info("清理临时构建文件...")
-    
-    # 清理临时构建文件和目录
-    for item in build_path.iterdir():
-        if item.name == "dist" and keep_dist:
-            continue
-        
-        if item.is_dir():
-            shutil.rmtree(item)
-        else:
-            item.unlink()
+block_cipher = None
 
-def create_config_file(app_name, version="1.0.0"):
-    """
-    创建应用配置文件
-    
-    Args:
-        app_name: 应用名称
-        version: 应用版本
-    """
-    config = {
-        "name": app_name,
-        "version": version,
-        "buildTime": time.strftime("%Y-%m-%d %H:%M:%S"),
-        "platform": sys.platform
-    }
-    
-    config_dir = Path("build")
-    config_dir.mkdir(exist_ok=True)
-    
-    config_file = config_dir / "app_config.json"
-    with open(config_file, "w") as f:
-        json.dump(config, f, indent=2)
-    
-    return config_file
+# Include all required data files
+data_files = [
+    ('app/static', 'app/static'),
+    # Add any other data files your application needs
+]
 
-def build_app(output_dir, app_name="Resume Generator", clean=True, port=8000):
-    """
-    构建应用主函数
+# Collect all required packages
+a = Analysis(
+    ['app/main.py'],
+    pathex=[],
+    binaries=[],
+    datas=data_files,
+    hiddenimports=[
+        'uvicorn.logging', 
+        'uvicorn.protocols', 
+        'uvicorn.lifespan', 
+        'uvicorn.protocols.http', 
+        'uvicorn.protocols.http.auto',
+        'tzdata',
+        'email.mime.text',  # Often required by email modules
+        'weasyprint',
+        'PIL._tkinter_finder',  # Pillow may need this
+    ],
+    hookspath=[],
+    hooksconfig={{}},
+    runtime_hooks=[],
+    excludes=[],
+    win_no_prefer_redirects=False,
+    win_private_assemblies=False,
+    cipher=block_cipher,
+    noarchive=False,
+)
+
+# Create the PYZ archive
+pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+
+# Create the executable
+exe = EXE(
+    pyz,
+    a.scripts,
+    [],
+    exclude_binaries=True,
+    name='LLM_Resume_Generator',
+    debug=False,
+    bootloader_ignore_signals=False,
+    strip=False,
+    upx=True,
+    console=True,  # Set to False for GUI-only app
+    disable_windowed_traceback=False,
+    argv_emulation=False,
+    target_arch=None,
+    codesign_identity=None,
+    entitlements_file=None,
+)
+
+# Collect all files
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
+    strip=False,
+    upx=True,
+    upx_exclude=[],
+    name='LLM_Resume_Generator',
+)
+"""
     
-    Args:
-        output_dir: 输出目录
-        app_name: 应用名称
-        clean: 是否清理临时文件
-        port: 应用端口
-    """
-    start_time = time.time()
-    logger.info(f"开始构建 {app_name}...")
+    with open("resume_generator.spec", "w") as spec_file:
+        spec_file.write(spec_content)
+    
+    # Clean previous builds
+    if os.path.exists("build"):
+        shutil.rmtree("build")
+    if os.path.exists("dist"):
+        shutil.rmtree("dist")
+    
+    # Run PyInstaller with more options
+    subprocess.run("pyinstaller resume_generator.spec --clean --log-level=DEBUG", shell=True, check=True)
+    os.chdir("..")
+    
+    # Copy the distribution to the main dist folder
+    backend_dist = os.path.join("backend", "dist", "LLM_Resume_Generator")
+    if os.path.exists(os.path.join("dist", "LLM_Resume_Generator")):
+        shutil.rmtree(os.path.join("dist", "LLM_Resume_Generator"))
+    shutil.copytree(backend_dist, os.path.join("dist", "LLM_Resume_Generator"))
+    
+    print("Executable packaging complete")
+
+def create_config_script():
+    """Create an improved configuration script for setting API keys"""
+    print("Creating configuration script...")
+    
+    config_script = """
+@echo off
+echo LLM Resume Generator Configuration
+echo ===============================
+echo.
+set /p GEMINI_API_KEY="Enter your Gemini API key: "
+set /p UNSPLASH_API_KEY="Enter your Unsplash API key: "
+
+echo.
+echo Writing configuration...
+echo GEMINI_API_KEY=%GEMINI_API_KEY% > config.env
+echo UNSPLASH_API_KEY=%UNSPLASH_API_KEY% >> config.env
+echo.
+echo Configuration complete! You can now run LLM_Resume_Generator using start_app.bat
+echo.
+echo Press any key to exit...
+pause > nul
+"""
+    with open(os.path.join("dist", "LLM_Resume_Generator", "configure.bat"), "w") as f:
+        f.write(config_script)
+    
+    # Also create a clearer README
+    readme = """
+# LLM Resume Generator
+
+## Setup Instructions
+
+1. Run `configure.bat` first to set up your API keys
+2. Run `start_app.bat` to launch the application
+3. Open your browser and navigate to http://localhost:8000
+
+## Troubleshooting
+
+If the application doesn't start:
+- Check that your API keys are correct
+- Ensure no other application is using port 8000
+- Try running with debug mode by using `debug_mode.bat`
+
+## Support
+
+If you encounter issues, please report them at:
+https://github.com/eleven-day/cv_generator/issues
+"""
+    with open(os.path.join("dist", "LLM_Resume_Generator", "README.txt"), "w") as f:
+        f.write(readme)
+    
+    print("Configuration script created")
+
+def create_launcher():
+    """Create an improved launcher script that loads environment variables"""
+    print("Creating launcher script...")
+    
+    launcher_script = """
+@echo off
+echo Loading configuration...
+for /F "tokens=*" %%A in (config.env) do set %%A
+echo.
+echo Starting LLM Resume Generator...
+echo The application will be available at http://localhost:8000
+echo.
+echo Press Ctrl+C to stop the server when you're done
+echo.
+start http://localhost:8000
+LLM_Resume_Generator.exe
+"""
+    with open(os.path.join("dist", "LLM_Resume_Generator", "start_app.bat"), "w") as f:
+        f.write(launcher_script)
+    
+    # Add a debug mode launcher
+    debug_script = """
+@echo off
+echo Loading configuration...
+for /F "tokens=*" %%A in (config.env) do set %%A
+echo.
+echo Starting LLM Resume Generator in DEBUG mode...
+echo The application will be available at http://localhost:8000
+echo.
+echo Press Ctrl+C to stop the server when you're done
+echo.
+set PYTHONUNBUFFERED=1
+start http://localhost:8000
+LLM_Resume_Generator.exe --debug
+pause
+"""
+    with open(os.path.join("dist", "LLM_Resume_Generator", "debug_mode.bat"), "w") as f:
+        f.write(debug_script)
+    
+    print("Launcher scripts created")
+
+def create_test_script():
+    """Create a test script to verify the packaged app works"""
+    print("Creating test script...")
+    
+    test_script = """
+@echo off
+echo Testing LLM Resume Generator...
+echo.
+echo This script will:
+echo 1. Check that all required files exist
+echo 2. Verify the application can start
+echo 3. Test API key configuration
+echo.
+echo Press any key to begin testing...
+pause > nul
+
+echo Checking for required files...
+if not exist LLM_Resume_Generator.exe (
+    echo ERROR: Executable file not found!
+    goto :error
+)
+if not exist app (
+    echo ERROR: Application files not found!
+    goto :error
+)
+echo All required files found.
+echo.
+
+echo Testing executable...
+LLM_Resume_Generator.exe --version
+if %ERRORLEVEL% NEQ 0 (
+    echo ERROR: Executable test failed!
+    goto :error
+)
+echo Executable test passed.
+echo.
+
+echo All tests completed successfully!
+goto :end
+
+:error
+echo.
+echo Test failed! Please check the errors above.
+pause
+exit /b 1
+
+:end
+echo.
+echo Press any key to exit...
+pause > nul
+exit /b 0
+"""
+    with open(os.path.join("dist", "LLM_Resume_Generator", "test_app.bat"), "w") as f:
+        f.write(test_script)
+    
+    print("Test script created")
+
+def copy_backend_requirements():
+    """Copy backend requirements file for reference"""
+    print("Copying backend requirements...")
+    shutil.copy(
+        os.path.join("backend", "requirements.txt"),
+        os.path.join("dist", "LLM_Resume_Generator", "requirements.txt")
+    )
+
+def main():
+    """Main packaging function with enhanced checks"""
+    print("Starting enhanced packaging process for LLM Resume Generator...")
+    
+    # Ensure we're in the project root
+    if not (os.path.exists("frontend") and os.path.exists("backend")):
+        print("Error: Script must be run from the project root directory")
+        sys.exit(1)
     
     try:
-        # 创建构建目录
-        build_dir = Path("build")
-        build_dir.mkdir(exist_ok=True)
+        create_directories()
+        install_missing_dependencies()
+        build_frontend()
+        build_executable()
+        create_config_script()
+        create_launcher()
+        create_test_script()
+        copy_backend_requirements()
         
-        # 初始化构建环境
-        check_dependencies()
-        
-        # 创建配置文件
-        create_config_file(app_name)
-        
-        # 并行构建前端和准备后端环境
-        with ThreadPoolExecutor() as executor:
-            # 构建前端
-            frontend_future = executor.submit(build_frontend)
-            
-            # 等待前端构建完成
-            frontend_build_dir = frontend_future.result()
-        
-        # 使用构建好的前端准备后端
-        prepare_backend(frontend_build_dir=frontend_build_dir)
-        
-        # 创建应用入口脚本
-        entry_script = create_entry_script(build_dir, custom_port=port)
-        
-        # 找到图标
-        icon_path = None
-        favicon_path = Path("frontend/public/favicon.ico")
-        if favicon_path.exists():
-            icon_path = str(favicon_path)
-        
-        # 构建可执行文件
-        executable_path = build_executable(
-            entry_script=entry_script,
-            output_dir=output_dir,
-            app_name=app_name,
-            icon_path=icon_path,
-            clean_build=clean
-        )
-        
-        # 复制到输出目录
-        final_path = copy_to_output(executable_path, output_dir)
-        
-        # 清理临时文件
-        if clean:
-            clean_temp_files(keep_dist=False)
-        
-        elapsed_time = time.time() - start_time
-        logger.info(f"构建完成! 用时: {elapsed_time:.2f}秒")
-        logger.info(f"可执行文件位置: {final_path}")
-        
-        return final_path
+        print("\nPackaging complete!")
+        print("The executable package is available in: dist/LLM_Resume_Generator/")
+        print("1. Run 'test_app.bat' to verify the application works")
+        print("2. Run 'configure.bat' to set your API keys")
+        print("3. Run 'start_app.bat' to launch the application")
     
-    except BuildError as e:
-        logger.error(f"构建失败: {e}")
-        sys.exit(1)
     except Exception as e:
-        logger.exception(f"构建过程中出现未预期的错误: {e}")
+        print(f"Error during packaging: {str(e)}")
+        import traceback
+        traceback.print_exc()
         sys.exit(1)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="构建简历生成器应用")
-    parser.add_argument("--output", default="dist", help="可执行文件输出目录")
-    parser.add_argument("--name", default="Resume Generator", help="应用名称")
-    parser.add_argument("--no-clean", action="store_true", help="保留临时构建文件")
-    parser.add_argument("--port", type=int, default=8000, help="应用运行端口")
-    parser.add_argument("--verbose", "-v", action="store_true", help="显示详细日志")
-    
-    args = parser.parse_args()
-    
-    # 设置日志级别
-    if args.verbose:
-        logger.setLevel(logging.DEBUG)
-    
-    build_app(
-        output_dir=args.output, 
-        app_name=args.name, 
-        clean=not args.no_clean,
-        port=args.port
-    )
+    main()

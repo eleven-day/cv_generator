@@ -9,14 +9,13 @@ import asyncio
 from urllib.parse import quote_plus
 from google import genai
 from google.genai import types
-import uuid
 from app.utils.logger import app_logger
 from app.utils.image_helpers import create_placeholder_image, resize_image
 
 # Initialize Google Gemini API client
 API_KEY = os.getenv("GEMINI_API_KEY", "your_api_key_here")  # Replace with your API key in production
 
-def process_uploaded_image(file: UploadFile, placeholder_id: str) -> Dict[str, Any]:
+async def process_uploaded_image(file: UploadFile, placeholder_id: str) -> Dict[str, Any]:
     """
     Process an uploaded image file
     
@@ -28,7 +27,7 @@ def process_uploaded_image(file: UploadFile, placeholder_id: str) -> Dict[str, A
         Dictionary with base64 encoded image and placeholder ID
     """
     # Read and process the image
-    content = file.read()
+    content = await file.read()
     
     # Resize if necessary
     content = resize_image(content, max_width=500, max_height=500)
@@ -208,7 +207,7 @@ def generate_image(prompt: str, placeholder_id: str) -> Dict[str, Any]:
 # Test the image service functions
 if __name__ == "__main__":
     # Test process_uploaded_image
-    def test_process_uploaded_image():
+    async def test_process_uploaded_image():
         # Create a test UploadFile object
         test_file = UploadFile(
             filename="test.jpg",
@@ -217,7 +216,7 @@ if __name__ == "__main__":
         test_file.file = open("test.jpg", "rb")
         
         # Run the test
-        result = process_uploaded_image(test_file, "test")
+        result = await process_uploaded_image(test_file, "test")
         print(result)
     
     # Test search_image
@@ -233,6 +232,6 @@ if __name__ == "__main__":
         print(result)
     
     # Run the tests
-    test_process_uploaded_image()
+    asyncio.run(test_process_uploaded_image())
     asyncio.run(test_search_image())
     test_generate_image()

@@ -11,12 +11,12 @@ from app.utils.logger import app_logger
 router = APIRouter()
 
 @router.post("/upload", response_model=ImageResponse)
-def upload_image(
+async def upload_image(
     file: UploadFile = File(...),
     placeholder_id: str = Form(...)
 ):
     try:
-        result = process_uploaded_image(file, placeholder_id)
+        result = await process_uploaded_image(file, placeholder_id)
         return result
     except Exception as e:
         app_logger.error(f"Error processing image: {str(e)}")
@@ -47,9 +47,7 @@ if __name__ == "__main__":
 
     # Test upload_image
     async def test_upload_image():
-        from fastapi import UploadFile
         from fastapi.datastructures import UploadFile as UploadFileData
-        from fastapi import Form
 
         # Create a test UploadFile object
         test_file = UploadFileData(
