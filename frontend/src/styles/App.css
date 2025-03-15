@@ -1,125 +1,180 @@
 .App {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-  }
-  
-  .App-header {
-    text-align: center;
-    margin-bottom: 30px;
-  }
-  
-  .App-header h1 {
-    color: #2c3e50;
-    font-size: 2.5rem;
-    margin: 0;
-  }
-  
-  .App-content {
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    padding: 20px;
-  }
-  
-  .editor-container {
-    display: flex;
-    gap: 20px;
-  }
-  
-  .resume-editor {
-    flex: 2;
-  }
-  
-  .placeholder-manager {
-    flex: 1;
-    padding: 20px;
-    background-color: #f9f9f9;
-    border-radius: 8px;
-    max-height: 700px;
-    overflow-y: auto;
-  }
-  
-  .placeholder-item {
-    margin-bottom: 15px;
-    cursor: pointer;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    overflow: hidden;
-  }
-  
-  .placeholder-preview {
-    height: 100px;
-    background-color: #eee;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-  }
-  
-  .placeholder-preview.selected {
-    border: 2px solid #3498db;
-  }
-  
-  .placeholder-preview img {
-    max-width: 100%;
-    max-height: 100%;
-  }
-  
-  .placeholder-text {
-    padding: 10px;
-    text-align: center;
-    color: #777;
-    font-style: italic;
-  }
-  
-  .placeholder-description {
-    padding: 8px;
-    background-color: #f5f5f5;
-    font-size: 0.9rem;
-  }
-  
-  .navigation-buttons {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 30px;
-  }
-  
-  .button {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 1rem;
-    transition: all 0.3s;
-    background-color: #e0e0e0;
-    color: #333;
-  }
-  
-  .button:hover {
-    background-color: #d0d0d0;
-  }
-  
-  .button.primary {
-    background-color: #3498db;
-    color: white;
-  }
-  
-  .button.primary:hover {
-    background-color: #2980b9;
-  }
-  
-  .button:disabled {
-    background-color: #ccc;
-    color: #888;
-    cursor: not-allowed;
-  }
-  
-  .error-message {
-    background-color: #ffeeee;
-    color: #e74c3c;
-    padding: 10px;
-    border-radius: 4px;
-    margin-bottom: 15px;
-  }
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.App-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.App-header h1 {
+  color: #2c3e50;
+  font-size: 2.5rem;
+  margin: 0;
+}
+
+/* New layout styles */
+.single-page-layout {
+  display: flex;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  min-height: calc(100vh - 150px);
+}
+
+.left-panel {
+  width: 35%;
+  overflow-y: auto;
+  border-right: 1px solid #ddd;
+  padding: 0;
+}
+
+.right-panel {
+  width: 65%;
+  display: flex;
+  flex-direction: column;
+}
+
+.view-controls {
+  display: flex;
+  padding: 10px 20px;
+  border-bottom: 1px solid #ddd;
+  background-color: #f9f9f9;
+}
+
+.view-button {
+  padding: 8px 15px;
+  margin-right: 10px;
+  background: none;
+  border: 1px solid #ddd;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.3s;
+}
+
+.view-button:hover {
+  background-color: #e0e0e0;
+}
+
+.view-button.active {
+  background-color: #3498db;
+  color: white;
+  border-color: #3498db;
+}
+
+.resume-display {
+  flex: 1;
+  overflow: auto;
+  padding: 20px;
+}
+
+.bottom-controls {
+  border-top: 1px solid #ddd;
+  display: flex;
+  height: 300px;
+  overflow-y: auto;
+}
+
+.placeholders-section {
+  flex: 1;
+  padding: 15px;
+  border-right: 1px solid #ddd;
+}
+
+.placeholders-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.placeholder-item {
+  width: 100px;
+  cursor: pointer;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 5px;
+  transition: all 0.3s;
+  margin-bottom: 10px;
+}
+
+.placeholder-item:hover, .placeholder-item.selected {
+  border-color: #3498db;
+  background-color: #f0f8ff;
+}
+
+.placeholder-preview {
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f5f5f5;
+  overflow: hidden;
+}
+
+.placeholder-preview img {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.placeholder-text {
+  padding: 5px;
+  text-align: center;
+  color: #777;
+  font-size: 0.8rem;
+}
+
+.placeholder-description {
+  font-size: 0.8rem;
+  text-align: center;
+  margin-top: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.export-section {
+  width: 300px;
+  padding: 15px;
+}
+
+.button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.3s;
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+.button:hover {
+  background-color: #d0d0d0;
+}
+
+.button.primary {
+  background-color: #3498db;
+  color: white;
+}
+
+.button.primary:hover {
+  background-color: #2980b9;
+}
+
+.button:disabled {
+  background-color: #ccc;
+  color: #888;
+  cursor: not-allowed;
+}
+
+.error-message {
+  background-color: #ffeeee;
+  color: #e74c3c;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+}

@@ -11,6 +11,6 @@ class ExportFormat(str, Enum):
 
 
 class ExportRequest(BaseModel):
-    markdown_content: str = Field(..., description="Resume content in markdown format")
+    html_content: str = Field(..., description="Resume content in HTML format")
     format: ExportFormat = Field(..., description="Desired export format")
     filename: str = Field("resume", description="Name for the exported file (without extension)")

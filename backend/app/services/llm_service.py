@@ -1,179 +1,152 @@
 from typing import Dict, Any, Optional
-import re
 import os
 from google import genai
 from google.genai import types
+from app.utils.markdown_helpers import extract_html_from_markdown, extract_image_placeholders
+from app.utils.templates import DEFAULT_RESUME_HTML, GENERATE_PROMPT_TEMPLATE
 from app.utils.logger import app_logger
-from app.utils.markdown_helpers import extract_image_placeholders
 
-# Initialize Google Gemini API client
-API_KEY = os.getenv("GEMINI_API_KEY", "your_api_key_here")  # Replace with your API key in production
-
-PROMPT_TEMPLATE = """
-<Background>
-You are an AI resume writer skilled at creating professional, concise, and well-formatted resumes.
-</Background>
-
-<Role>
-Resume Writer
-</Role>
-
-<Task>
-Create a professional resume in markdown format for the user based on the provided information.
-</Task>
-
-<Style>
-- Professional and concise
-- Well-organized sections (Personal Info, Summary, Experience, Education, Skills, etc.)
-- Clean formatting with appropriate headings, bullet points, and spacing
-- Image placeholders marked with special syntax: ![description](image:placeholder_id)
-</Style>
-
-<Metrics>
-- Length: Content should fit on a single A4 page
-- Focus on relevant information only
-- Use professional language and industry-appropriate terminology
-</Metrics>
-
-<User Input>
-Name: {name}
-Position: {position}
-{additional_info}
-</User Input>
-
-<Output Format>
-Provide a complete resume in markdown format. For any images (profile photo, icons, etc.), 
-use the placeholder syntax: ![description](image:placeholder_id) where placeholder_id is a unique identifier.
-</Output Format>
-"""
+# 初始化 Google Gemini API 客户端
+API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyD65DzyhRLN4YmGS6PRbJrx10j_PC8nBb0")  # 在生产环境中替换为您的 API 密钥
 
 def generate_resume_content(
     name: str,
     position: str,
     additional_info: Dict[str, Any] = None,
-    existing_content: Optional[str] = None
+    existing_content: Optional[str] = None,
+    update_instructions: Optional[str] = None
 ) -> Dict[str, Any]:
     """
-    Generate resume content using Google Gemini API
+    使用Google Gemini API生成简历内容
     
     Args:
-        name: User's name
-        position: Job position
-        additional_info: Additional resume information
-        existing_content: Existing markdown content to update
+        name: 用户姓名
+        position: 职位
+        additional_info: 额外的简历信息
+        existing_content: 要更新的现有HTML内容
+        update_instructions: 更新现有内容的具体指示
         
     Returns:
-        Dictionary with markdown content and image placeholders
+        包含HTML内容和图片占位符的字典
     """
-    app_logger.info(f"Generating resume for {name}, position: {position}")
+    app_logger.info(f"为 {name} 生成简历，职位: {position}")
     
     additional_info_str = ""
     if additional_info:
         for key, value in additional_info.items():
             additional_info_str += f"{key}: {value}\n"
     
-    # Create the prompt
+    # 创建提示
     if existing_content:
-        # If updating existing content, use a different prompt
-        app_logger.info("Updating existing resume content")
+        # 如果更新现有内容，使用不同的提示
+        app_logger.info("更新现有简历内容")
         prompt = f"""
-        <Background>
-        You are an AI resume writer skilled at updating professional resumes.
-        </Background>
+        <背景>
+        您是一位专业简历撰写AI助手，精通更新专业简历。您专门为中国求职市场服务，了解中国雇主的喜好和期望。
+        在中国求职市场，简历中应避免出现工作或学习的空窗期（gap year），如有空窗期应适当填充或合理解释。
+        </背景>
 
-        <Role>
-        Resume Writer
-        </Role>
+        <角色>
+        简历撰写专家
+        </角色>
 
-        <Task>
-        Update the existing resume markdown with new information while maintaining the format.
-        </Task>
+        <任务>
+        更新现有HTML格式的简历，加入新信息同时保持格式一致。
+        </任务>
 
-        <User Input>
-        Name: {name}
-        Position: {position}
+        <用户输入>
+        姓名: {name}
+        职位: {position}
         {additional_info_str}
-        </User Input>
+        </用户输入>
 
-        <Existing Resume>
+        <现有简历>
         {existing_content}
-        </Existing Resume>
+        </现有简历>
 
-        <Output Format>
-        Provide the updated resume in markdown format. Maintain the existing image placeholders.
-        </Output Format>
+        <更新要求>
+        {update_instructions if update_instructions else "保持现有排版和设计，更新内容。"}
+        </更新要求>
+
+        <输出格式>
+        提供更新后的完整HTML格式简历。保留现有图片占位符。
+        </输出格式>
         """
     else:
-        # Create a new resume
-        app_logger.info("Creating new resume content")
-        prompt = PROMPT_TEMPLATE.format(
+        # 创建新简历
+        app_logger.info("创建新简历内容")
+        prompt = GENERATE_PROMPT_TEMPLATE.format(
             name=name,
             position=position,
-            additional_info=additional_info_str
+            additional_info=additional_info_str,
+            default_html_template=DEFAULT_RESUME_HTML
         )
     
     try:
-        # Generate content using Gemini
+        # 使用Gemini生成内容
         client = genai.Client(api_key=API_KEY)
         response = client.models.generate_content(
             model="gemini-2.0-flash",
             contents=prompt,
             config=types.GenerateContentConfig(
-                max_output_tokens=2000,
+                max_output_tokens=4000,
                 temperature=0.2
             )
         )
         
-        markdown_content = response.text
+        # 处理响应文本，以防它包含markdown格式
+        raw_text = response.text
+        html_content = extract_html_from_markdown(raw_text)
         
-        # Extract image placeholders
-        image_placeholders = extract_image_placeholders(markdown_content)
+        # 提取图片占位符
+        image_placeholders = extract_image_placeholders(html_content)
         
-        app_logger.info(f"Resume generated successfully with {len(image_placeholders)} image placeholders")
+        app_logger.info(f"简历生成成功，包含 {len(image_placeholders)} 个图片占位符")
         
         return {
-            "markdown_content": markdown_content,
+            "html_content": html_content,
             "image_placeholders": image_placeholders
         }
     except Exception as e:
-        app_logger.error(f"Error generating resume content: {str(e)}")
+        app_logger.error(f"生成简历内容时出错: {str(e)}")
         raise
 
-# Test the resume service functions
 if __name__ == "__main__":
-    import asyncio
-    from app.models.resume import ResumeInput
-
-    # Test generate_resume
-    async def test_generate_resume():
-        # Create a test ResumeInput object
-        test_request = ResumeInput(
-            name="Xiao Han",
-            position="Algorithm Engineer",
-            additional_info={}
-        )
-
-        # Run the test
-        result = generate_resume_content(
-            name=test_request.name,
-            position=test_request.position,
-            additional_info=test_request.additional_info
-        )
-        print(result)
-
-    # Test update_resume
-    async def test_update_resume():
-        # Create a test markdown content
-        test_markdown = "**Test**"
-
-        # Run the test
-        result = generate_resume_content(
-            name="Xiao Han",
-            position="Algorithm Engineer",
-            additional_info={},
-            existing_content=test_markdown
-        )
-        print(result)
-
-    asyncio.run(test_generate_resume())
-    asyncio.run(test_update_resume())
+    # 测试简历生成功能
+    print("测试生成新简历")
+    resume_content = generate_resume_content(
+        name="张三",
+        position="数据分析师",
+        additional_info={
+            "邮箱": "609887398@qq.com",
+            "手机": "18812345678",
+            "所在地": "北京",
+            "求职意向": "数据分析"
+        }
+    )
+    print(resume_content["html_content"])
+    print("图片占位符:", resume_content["image_placeholders"])
+    
+    # 测试更新功能
+    print("\n测试更新现有简历")
+    updated_resume = generate_resume_content(
+        name="张三",
+        position="高级数据分析师",
+        additional_info={
+            "邮箱": "609887398@qq.com",
+            "手机": "18812345678",
+            "所在地": "北京",
+            "求职意向": "数据分析与挖掘",
+            "教育经历": "北京大学，计算机科学与技术，硕士",
+            "专业技能": "Python, SQL, 数据可视化",
+            "项目经历": "数据分析项目1，数据分析项目2",
+            "工作经历": "数据分析师，高级数据分析师",
+            "语言能力": "英语CET-6",
+            "证书与资质": "数据分析证书",
+            "兴趣爱好": "阅读，篮球"
+        },
+        existing_content=resume_content["html_content"],
+        update_instructions="请将简历排版顺序调整为：教育经历、专业技能、项目经历、工作经历、语言能力、证书与资质、兴趣爱好"
+    )
+    print(updated_resume["html_content"])
+    print("图片占位符:", updated_resume["image_placeholders"])

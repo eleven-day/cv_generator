@@ -1,79 +1,88 @@
 import re
-from typing import Dict, List, Tuple
+from typing import Dict
 
-def extract_image_placeholders(markdown_content: str) -> Dict[str, str]:
+# app/utils/markdown_helpers.py的新函数实现
+def extract_html_from_markdown(text):
     """
-    Extract image placeholders from markdown content
+    从markdown文本中提取HTML内容。
+    如果没有检测到markdown格式，则返回原始文本。
     
     Args:
-        markdown_content: Markdown text content
+        text: 可能包含markdown格式的文本
         
     Returns:
-        Dictionary mapping placeholder IDs to descriptions
+        提取的HTML或原始文本
     """
-    placeholders = {}
-    placeholder_pattern = r'!\[(.*?)\]\(image:(.*?)\)'
+    # 检查文本是否包含带有HTML的markdown代码块
+    html_pattern = r"```html\s+(.*?)\s+```"
+    matches = re.findall(html_pattern, text, re.DOTALL)
     
-    for match in re.finditer(placeholder_pattern, markdown_content):
-        description = match.group(1)
-        placeholder_id = match.group(2)
-        placeholders[placeholder_id] = description
+    if matches:
+        # 返回找到的第一个HTML块
+        return matches[0]
+    else:
+        # 未找到markdown HTML块，返回原始文本
+        return text
+
+def extract_image_placeholders(html_content):
+    """
+    从HTML内容中提取图片占位符。
+    图片占位符格式为: src="image:placeholder_id"
+    
+    Args:
+        html_content: 包含图片占位符的HTML内容
+        
+    Returns:
+        占位符ID和其alt文本的字典
+    """
+    # 提取具有正确占位符格式的图像标签
+    pattern = r'<img\s+src="image:([^"]+)"\s+alt="([^"]*)"'
+    matches = re.findall(pattern, html_content)
+    
+    # 创建占位符ID和alt文本的字典
+    placeholders = {}
+    for placeholder_id, alt_text in matches:
+        placeholders[placeholder_id] = alt_text
     
     return placeholders
 
 
 def replace_placeholders_with_images(
-    markdown_content: str, 
-    image_data: Dict[str, str]
+    html_content: str, image_data: Dict[str, str]
 ) -> str:
     """
-    Replace image placeholders in markdown with actual image data URLs
+    用实际图像URL替换HTML内容中的图片占位符。
     
     Args:
-        markdown_content: Original markdown content with placeholders
-        image_data: Dictionary mapping placeholder IDs to image data URLs
+        html_content: 包含图片占位符的HTML内容
+        image_data: 图片占位符ID和URL的字典
         
     Returns:
-        Updated markdown with placeholders replaced by actual images
+        替换占位符后的HTML内容
     """
-    updated_content = markdown_content
+    # 提取占位符ID和alt文本
+    placeholders = extract_image_placeholders(html_content)
     
-    for placeholder_id, image_url in image_data.items():
-        placeholder_pattern = f'!\\[(.*?)\\]\\(image:{placeholder_id}\\)'
-        placeholder_regex = re.compile(placeholder_pattern)
-        
-        # Find all matches to preserve descriptions
-        matches = list(placeholder_regex.finditer(updated_content))
-        for match in matches:
-            description = match.group(1)
-            placeholder = match.group(0)
-            replacement = f'![{description}]({image_url})'
-            updated_content = updated_content.replace(placeholder, replacement)
+    # 替换占位符
+    for placeholder_id, alt_text in placeholders.items():
+        if placeholder_id in image_data:
+            # 使用实际图像URL替换占位符
+            image_url = image_data[placeholder_id]
+            img_tag = f'<img src="{image_url}" alt="{alt_text}">'
+            html_content = html_content.replace(
+                f'<img src="image:{placeholder_id}" alt="{alt_text}">', img_tag
+            )
     
-    return updated_content
+    return html_content
 
 if __name__ == "__main__":
+    # 测试新函数实现
     markdown_text = """
-    # My Resume
-    
-    This is my resume with an image placeholder:
-    
-    ![Profile Picture](image:profile_pic)
-    
-    ## Experience
-    
-    Here is a logo placeholder:
-    
-    ![Company Logo](image:company_logo)
+    ```html
+    <img src="image:123" alt="A placeholder image">
+    ```
     """
-    
-    image_data = {
-        "profile_pic": "https://example.com/profile_pic.jpg",
-        "company_logo": "https://example.com/company_logo.png"
-    }
-    
-    placeholders = extract_image_placeholders(markdown_text)
-    print(f"Extracted placeholders: {placeholders}")
-    
-    updated_markdown = replace_placeholders_with_images(markdown_text, image_data)
-    print(f"Updated markdown content:\n{updated_markdown}")
+    html_content = extract_html_from_markdown(markdown_text)
+    image_data = {"123": "https://example.com/image.jpg"}
+    replaced_html = replace_placeholders_with_images(html_content, image_data)
+    print(replaced_html)    

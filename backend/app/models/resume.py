@@ -37,7 +37,7 @@ class ResumeInput(ResumeBase):
 
 
 class ResumeOutput(BaseModel):
-    markdown_content: str = Field(..., description="Generated resume content in markdown format")
+    html_content: str = Field(..., description="Generated resume content in HTML format")
     image_placeholders: Dict[str, str] = Field(..., description="Image placeholders found in the content")
 
 

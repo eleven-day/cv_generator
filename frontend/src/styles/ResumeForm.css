@@ -1,40 +1,83 @@
 .resume-form-container {
-    padding: 20px;
-  }
-  
-  .resume-form {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-  }
-  
-  .form-group {
-    display: flex;
-    flex-direction: column;
-  }
-  
-  .form-group label {
-    margin-bottom: 5px;
-    font-weight: 600;
-    color: #333;
-  }
-  
-  .form-group input,
-  .form-group textarea {
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 1rem;
-    font-family: inherit;
-  }
-  
-  .form-group textarea {
-    resize: vertical;
-  }
-  
-  .form-group input:focus,
-  .form-group textarea:focus {
-    border-color: #3498db;
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
-  }
+  padding: 20px;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.resume-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  margin-bottom: 4px;
+  font-weight: 600;
+  color: #333;
+  font-size: 0.95rem;
+}
+
+.form-group input,
+.form-group textarea {
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+
+.form-group textarea {
+  resize: vertical;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  border-color: #3498db;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+/* Adjust height for text areas to fit content better */
+.form-group textarea[name="experience"] {
+  min-height: 90px;
+}
+
+.form-group textarea[name="education"],
+.form-group textarea[name="skills"] {
+  min-height: 70px;
+}
+
+.form-group textarea[name="contact"] {
+  min-height: 50px;
+}
+
+.form-group textarea[name="additionalInfo"] {
+  min-height: 70px;
+}
+
+/* Primary button styling */
+.button.primary {
+  margin-top: 10px;
+  padding: 10px;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.button.primary:hover {
+  background-color: #2980b9;
+}
+
+.button.primary:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}

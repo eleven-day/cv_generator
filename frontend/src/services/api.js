@@ -33,14 +33,13 @@ export const imageApi = {
 
 // Export API endpoints
 export const exportApi = {
-  exportResume: (markdown, format, filename = 'resume') => 
+  exportResume: (html, format, filename = 'resume') => 
     api.post('/export/convert', 
-      { markdown_content: markdown, format, filename },
+      { html_content: html, format, filename },
       { responseType: 'blob' }
     ),
 };
 
-// 将对象赋值给变量，再导出，解决 import/no-anonymous-default-export 警告
 const apiService = {
   resume: resumeApi,
   image: imageApi,

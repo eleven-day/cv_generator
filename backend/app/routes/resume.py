@@ -22,7 +22,7 @@ def generate_resume(input_data: ResumeInput = Body(...)):
 
 @router.post("/update", response_model=ResumeOutput)
 def update_resume(
-    markdown_content: str = Body(...),
+    html_content: str = Body(...),
     name: str = Body("Xiao Han"),
     position: str = Body("Algorithm Engineer"),
     additional_info: Optional[Dict[str, Any]] = Body(None)
@@ -33,7 +33,7 @@ def update_resume(
             name=name,
             position=position,
             additional_info=additional_info or {},
-            existing_content=markdown_content
+            existing_content=html_content
         )
         return result
     except Exception as e:
@@ -59,11 +59,11 @@ if __name__ == "__main__":
 
     # Test update_resume
     def test_update_resume():
-        # Create a test markdown content
-        test_markdown = "**Test**"
+        # Create a test HTML content
+        test_html = "<div>Test HTML content</div>"
 
         # Run the test
-        result = update_resume(test_markdown)
+        result = update_resume(test_html)
         print(result)
 
     test_generate_resume()

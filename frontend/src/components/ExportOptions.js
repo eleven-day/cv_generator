@@ -2,20 +2,24 @@ import React, { useState } from 'react';
 import { exportApi } from '../services/api';
 import '../styles/ExportOptions.css';
 
-const ExportOptions = ({ markdownContent }) => {
-  const [exportFormat, setExportFormat] = useState('pdf');
+const ExportOptions = ({ htmlContent }) => {
   const [filename, setFilename] = useState('resume');
   const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState(null);
 
   const handleExport = async () => {
+    if (!htmlContent) {
+      setError('No resume content to export. Please generate a resume first.');
+      return;
+    }
+    
     setIsExporting(true);
     setError(null);
     
     try {
       const response = await exportApi.exportResume(
-        markdownContent,
-        exportFormat,
+        htmlContent,
+        'pdf',
         filename
       );
       
@@ -23,7 +27,7 @@ const ExportOptions = ({ markdownContent }) => {
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `${filename}.${exportFormat}`);
+      link.setAttribute('download', `${filename}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -37,7 +41,7 @@ const ExportOptions = ({ markdownContent }) => {
 
   return (
     <div className="export-options">
-      <h2>Export Your Resume</h2>
+      <h3>Export Your Resume</h3>
       {error && <div className="error-message">{error}</div>}
       
       <div className="export-form">
@@ -52,72 +56,12 @@ const ExportOptions = ({ markdownContent }) => {
           />
         </div>
         
-        <div className="form-group">
-          <label>Export Format:</label>
-          <div className="format-options">
-            <label className="format-option">
-              <input
-                type="radio"
-                name="format"
-                value="pdf"
-                checked={exportFormat === 'pdf'}
-                onChange={() => setExportFormat('pdf')}
-              />
-              <span className="format-label">PDF</span>
-            </label>
-            
-            <label className="format-option">
-              <input
-                type="radio"
-                name="format"
-                value="docx"
-                checked={exportFormat === 'docx'}
-                onChange={() => setExportFormat('docx')}
-              />
-              <span className="format-label">DOCX</span>
-            </label>
-            
-            <label className="format-option">
-              <input
-                type="radio"
-                name="format"
-                value="pptx"
-                checked={exportFormat === 'pptx'}
-                onChange={() => setExportFormat('pptx')}
-              />
-              <span className="format-label">PPTX</span>
-            </label>
-            
-            <label className="format-option">
-              <input
-                type="radio"
-                name="format"
-                value="md"
-                checked={exportFormat === 'md'}
-                onChange={() => setExportFormat('md')}
-              />
-              <span className="format-label">Markdown</span>
-            </label>
-            
-            <label className="format-option">
-              <input
-                type="radio"
-                name="format"
-                value="html"
-                checked={exportFormat === 'html'}
-                onChange={() => setExportFormat('html')}
-              />
-              <span className="format-label">HTML</span>
-            </label>
-          </div>
-        </div>
-        
         <button 
-          className="button primary" 
+          className="button primary export-button" 
           onClick={handleExport}
           disabled={isExporting}
         >
-          {isExporting ? 'Exporting...' : `Export as ${exportFormat.toUpperCase()}`}
+          {isExporting ? 'Exporting...' : 'Export as PDF'}
         </button>
       </div>
     </div>

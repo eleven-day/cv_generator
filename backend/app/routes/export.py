@@ -17,7 +17,7 @@ async def convert_resume(input_data: ExportRequest = Body(...)):
         
         # Export the resume to the specified format
         export_resume(
-            markdown_content=input_data.markdown_content,
+            html_content=input_data.html_content,
             output_format=input_data.format.value,
             output_path=temp_filename
         )
@@ -41,7 +41,7 @@ if __name__ == "__main__":
 
     # Create a test ExportRequest object
     test_request = ExportRequest(
-        markdown_content="**Test**",
+        html_content="<div>Test HTML content</div>",
         format=ExportFormat.PDF,
         filename="test"
     )

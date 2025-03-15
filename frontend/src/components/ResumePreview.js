@@ -1,42 +1,36 @@
-import React from 'react';
-import ReactMarkdown from 'react-markdown';
+import React, { useMemo } from 'react';
 import '../styles/ResumePreview.css';
 
-const ResumePreview = ({ markdownContent, imagePlaceholders, imageData }) => {
-  // Function to process markdown content and replace image placeholders with actual images
-  const processMarkdown = (content) => {
-    let processedContent = content;
+const ResumePreview = ({ htmlContent, imagePlaceholders, imageData }) => {
+  // Process HTML content to replace image placeholders with actual images
+  const processedHtml = useMemo(() => {
+    if (!htmlContent) return '';
+    
+    let processedContent = htmlContent;
     
     // Replace placeholders with actual images if available
     Object.entries(imagePlaceholders).forEach(([id, description]) => {
-      const placeholderRegex = new RegExp(`!\\[${description}\\]\\(image:${id}\\)`, 'g');
-      
       if (imageData[id]) {
+        const placeholderRegex = new RegExp(`src="image:${id}"`, 'g');
         processedContent = processedContent.replace(
           placeholderRegex,
-          `![${description}](${imageData[id]})`
-        );
-      } else {
-        // Leave the placeholder as is, it will be rendered as text
-        processedContent = processedContent.replace(
-          placeholderRegex,
-          `[Image Placeholder: ${description}]`
+          `src="${imageData[id]}"`
         );
       }
     });
     
     return processedContent;
-  };
+  }, [htmlContent, imagePlaceholders, imageData]);
 
   return (
     <div className="resume-preview">
-      <h2>Resume Preview</h2>
       <div className="preview-container">
-        <div className="preview-page">
-          <ReactMarkdown>
-            {processMarkdown(markdownContent)}
-          </ReactMarkdown>
-        </div>
+        <iframe
+          title="Resume Preview"
+          srcDoc={processedHtml}
+          className="preview-iframe"
+          sandbox="allow-same-origin"
+        />
       </div>
     </div>
   );
